@@ -1,0 +1,16 @@
+/* ============ CAMERA & TỰ ĐỘNG CHỤP ============ */
+const Cam={stream:null,tm:null,prev:null,still:0,last:0,auto:true,busy:false};
+function startScan(){if(!S.cur)newDoc();openCam()}
+async function openCam(){const o=$('#ov2');o.hidden=false;o.className='ov cam';o.innerHTML=`<video id="v" autoplay playsinline muted></video><svg class="pl" id="pl"><polygon id="pg" fill="rgba(76,155,240,.18)" stroke="#4c9bf0" stroke-width="3"/></svg>
+ <div class="top"><button class="i" aria-label="Đóng" onclick="closeCam()">${ic('x')}</button><button id="am">Tự động</button></div><div class="hint"><span id="ht">Đưa tài liệu vào trong khung</span></div>
+ <div class="bot"><div class="th" id="ths"></div><button class="shut" id="sh1" aria-label="Chụp"></button><button class="p" onclick="closeCam(true)" id="dn">Xong</button></div>`;
+ $('#am').onclick=()=>{Cam.auto=!Cam.auto;$('#am').textContent=Cam.auto?'Tự động':'Thủ công';Cam.still=0};$('#sh1').onclick=()=>snap();updCam();
+ try{Cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920}}});const v=$('#v');v.srcObject=Cam.stream;v.onloadedmetadata=()=>$('#pl').setAttribute('viewBox',`0 0 ${v.videoWidth} ${v.videoHeight}`);Cam.tm=setInterval(tick,300)}
+ catch(e){o.className='ov';o.innerHTML=`<div class="empty"><h2>Không thể truy cập camera</h2><p>Hãy cấp quyền camera cho ScanPro để quét tài liệu.</p><div class="ch" style="justify-content:center"><button class="p" onclick="openCam()">Thử lại</button><button onclick="closeCam();pickImages(review)">Chọn ảnh từ thư viện</button><button onclick="closeCam()">Đóng</button></div></div>`}}
+function updCam(){const n=S.cur.pages.length;$('#dn')&&($('#dn').textContent=n?`Xong (${n})`:'Xong');$('#ths')&&($('#ths').innerHTML=S.cur.pages.slice(-4).map(p=>`<img src="${p.thumb}" alt="">`).join(''));if(n)$('#ht').textContent=`Đã quét ${n} trang`}
+function tick(){const v=$('#v');if(!v||!v.videoWidth||Cam.busy)return;const c=document.createElement('canvas');c.width=160;c.height=Math.round(160*v.videoHeight/v.videoWidth);const x=c.getContext('2d');x.drawImage(v,0,0,c.width,c.height);const d=x.getImageData(0,0,c.width,c.height).data;let df=0;if(Cam.prev&&Cam.prev.length==d.length){for(let i=0;i<d.length;i+=16)df+=Math.abs(d[i]-Cam.prev[i]);df/=d.length/16}else df=99;Cam.prev=d;
+ const r=Eng.detect(c),V=[v.videoWidth,v.videoHeight];$('#pg').setAttribute('points',r.ok?r.q.map(p=>p[0]*V[0]+','+p[1]*V[1]).join(' '):'');
+ if(r.ok&&df<5)Cam.still++;else Cam.still=0;if(!Cam.auto||Date.now()-Cam.last<2500)return;
+ const h=$('#ht');if(Cam.still>=5){snap()}else if(Cam.still>=2)h.textContent='Giữ yên...';else h.textContent=r.ok?'Đã phát hiện tài liệu':'Đưa tài liệu vào trong khung'}
+async function snap(){const v=$('#v');if(!v||Cam.busy||!v.videoWidth)return;Cam.busy=true;Cam.last=Date.now();Cam.still=0;const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);try{await addBlob(await toBlob(c,.92))}catch(e){toast('Không thể xử lý ảnh vừa chụp')}Cam.busy=false;Cam.last=Date.now();updCam()}
+function closeCam(done){clearInterval(Cam.tm);Cam.stream?.getTracks().forEach(t=>t.stop());Cam.stream=null;const o=$('#ov2');o.hidden=true;o.innerHTML='';if(done&&S.cur.pages.length)review();else if(S.cur&&!S.cur.pages.length)S.cur=null}
