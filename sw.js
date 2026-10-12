@@ -1,5 +1,5 @@
 /* Service worker ScanPro: cache app shell để chạy offline, cache thêm thư viện/mô hình OCR khi đã tải lần đầu */
-const V='scanpro-v2',OCR_C='scanpro-ocr-v1';
+const V='scanpro-v3',OCR_C='scanpro-ocr-v1';
 const SHELL=['./','index.html','css/style.css','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png',
  'js/util.js','js/storage.js','js/scanner-engine.js','js/pdf.js','js/ocr.js','js/documents.js','js/home.js','js/camera.js','js/review.js','js/export.js','js/crop.js','js/viewer.js','js/main.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});

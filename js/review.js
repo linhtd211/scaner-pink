@@ -8,7 +8,9 @@ function closeReview(){$('#ov').hidden=true;S.cur=null;render()}
 const addMore=()=>openCam();
 async function doSave(){if(!S.cur.pages.length)return toast('Chưa có trang nào');await saveDoc();closeReview()}
 const FL=[['auto','Tự động'],['orig','Gốc'],['text','Văn bản'],['bw','Đen trắng'],['color','Màu'],['red','Dấu đỏ'],['photo','Ảnh']];
-function pageMenu(i){const p=S.cur.pages[i];sheet(`<b>Trang ${i+1}</b><div class="ch">${FL.map(([k,l])=>`<button class="${p.filter==k?'on':''}" onclick="setF(${i},'${k}')">${l}</button>`).join('')}</div>
+let _pu;
+function previewFull(i){sheet();viewer(i)}
+function pageMenu(i){const p=S.cur.pages[i];if(_pu)URL.revokeObjectURL(_pu);_pu=URL.createObjectURL(p.out);sheet(`<b>Trang ${i+1}</b> <span class="m">· chạm vào ảnh để xem cỡ lớn</span><img src="${_pu}" alt="Xem trước trang ${i+1}" style="display:block;width:100%;max-height:42vh;object-fit:contain;margin:8px 0;background:#fff;border:1px solid var(--bd);border-radius:8px" onclick="previewFull(${i})"><div class="ch">${FL.map(([k,l])=>`<button class="${p.filter==k?'on':''}" onclick="setF(${i},'${k}')">${l}</button>`).join('')}</div>
  <label class="r">Độ sáng<input type="range" min="-60" max="60" value="${p.adj.b}" oninput="p_(${i},'b',this.value)"></label><label class="r">Tương phản<input type="range" min="-50" max="80" value="${p.adj.c}" oninput="p_(${i},'c',this.value)"></label><label class="r">Nhiệt độ màu<input type="range" min="-60" max="60" value="${p.adj.t}" oninput="p_(${i},'t',this.value)"></label>
  <div class="ch"><button onclick="cropPage(${i})">Cắt lại</button><button onclick="rot(${i},3)">Xoay trái</button><button onclick="rot(${i},1)">Xoay phải</button><button onclick="mv(${i},-1)">Lùi lại</button><button onclick="mv(${i},1)">Tiến lên</button><button onclick="dupP(${i})">Nhân bản</button><button onclick="ocrPage(${i})">OCR trang này</button><button onclick="textView(${i})">Văn bản trang</button><button onclick="resetP(${i})">Khôi phục</button><button onclick="delP(${i})">Xóa</button></div>`)}
 async function upd(i){await renderPage(S.cur.pages[i]);review()}

@@ -1,7 +1,9 @@
+// Độ phân giải tối đa (cạnh dài): khi đọc ảnh và khi xuất trang đã chỉnh phối cảnh
+const MAX_LOAD=2000,MAX_OUT=1700;
 /* ============ SCANNER ENGINE: detect / warp / enhance / blur ============ */
 const Eng={
  // Đọc ảnh, thu nhỏ tối đa 2000px để tiết kiệm RAM
- async load(b){const i=await createImageBitmap(b),s=Math.min(1,2000/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s|0;c.height=i.height*s|0;c.getContext('2d').drawImage(i,0,0,c.width,c.height);return c},
+ async load(b){const i=await createImageBitmap(b),s=Math.min(1,MAX_LOAD/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s|0;c.height=i.height*s|0;c.getContext('2d').drawImage(i,0,0,c.width,c.height);return c},
  // Tìm vùng giấy sáng lớn nhất (xấp xỉ hình chữ nhật). Trả về góc chuẩn hoá TL,TR,BR,BL
  detect(c){const w=96,h=Math.max(8,Math.round(96*c.height/c.width)),t=document.createElement('canvas');t.width=w;t.height=h;const x=t.getContext('2d');x.drawImage(c,0,0,w,h);const d=x.getImageData(0,0,w,h).data,g=[];let s=0;for(let i=0;i<d.length;i+=4){const v=.3*d[i]+.59*d[i+1]+.11*d[i+2];g.push(v);s+=v}
   const th=Math.max(s/g.length*1.05,90),rows=Array(h).fill(0),cols=Array(w).fill(0);g.forEach((v,i)=>{if(v>th){rows[i/w|0]++;cols[i%w]++}});
@@ -10,7 +12,7 @@ const Eng={
   if((x1-x0)*(y1-y0)<.25)return{ok:0,q:Eng.full(.06)};return{ok:1,q:[[x0,y0],[x1,y0],[x1,y1],[x0,y1]]}},
  full:(m=0)=>[[m,m],[1-m,m],[1-m,1-m],[m,1-m]],
  // Chỉnh phối cảnh: ánh xạ hình vuông đơn vị -> tứ giác (homography), lấy mẫu song tuyến
- warp(c,q){const P=q.map(p=>[p[0]*c.width,p[1]*c.height]),dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);let W=(dist(P[0],P[1])+dist(P[3],P[2]))/2,H=(dist(P[0],P[3])+dist(P[1],P[2]))/2;const k=Math.min(1,1700/Math.max(W,H));W=Math.max(8,W*k|0);H=Math.max(8,H*k|0);
+ warp(c,q){const P=q.map(p=>[p[0]*c.width,p[1]*c.height]),dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);let W=(dist(P[0],P[1])+dist(P[3],P[2]))/2,H=(dist(P[0],P[3])+dist(P[1],P[2]))/2;const k=Math.min(1,MAX_OUT/Math.max(W,H));W=Math.max(8,W*k|0);H=Math.max(8,H*k|0);
   const[[x0,y0],[x1,y1],[x2,y2],[x3,y3]]=P,dx1=x1-x2,dx2=x3-x2,dx3=x0-x1+x2-x3,dy1=y1-y2,dy2=y3-y2,dy3=y0-y1+y2-y3,den=dx1*dy2-dy1*dx2||1e-9,g=(dx3*dy2-dy3*dx2)/den,h=(dx1*dy3-dy1*dx3)/den,a=x1-x0+g*x1,b=x3-x0+h*x3,d=y1-y0+g*y1,e=y3-y0+h*y3;
   const sx=c.getContext('2d').getImageData(0,0,c.width,c.height),S=sx.data,o=document.createElement('canvas');o.width=W;o.height=H;const ox=o.getContext('2d'),od=ox.createImageData(W,H),D=od.data;
   for(let j=0;j<H;j++){const v=j/(H-1);for(let i=0;i<W;i++){const u=i/(W-1),z=g*u+h*v+1,X=Math.min(c.width-1.01,Math.max(0,(a*u+b*v+x0)/z)),Y=Math.min(c.height-1.01,Math.max(0,(d*u+e*v+y0)/z)),xi=X|0,yi=Y|0,fx=X-xi,fy=Y-yi,p=(yi*c.width+xi)*4,o4=(j*W+i)*4;
